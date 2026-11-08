@@ -281,7 +281,36 @@ function categoryOf(e){return /fuel|petrol|toll|taxi|cab|car|bus|train|flight/i.
 function v8ExpenseRow(t,e){return `<article class="v8-allocation"><button class="v8-exp-head" data-v8-exp="${esc(e.id)}" aria-expanded="${v8OpenExpense===e.id}"><span>${esc(e.name)}<small>${esc(payerLabel(t,e))} paid · ${esc(categoryOf(e))}</small></span><strong>${money(e.amount)}</strong><span class="v8-chevron">⌄</span></button>${v8OpenExpense===e.id?`<div class="v8-allocation-body">${v8ExpenseDetails(t,e)}<div class="actions"><button class="btn mini ghost" data-edit="${esc(e.id)}">Edit expense</button><button class="btn mini ghost" data-delete="${esc(e.id)}">Delete</button></div></div>`:''}</article>`}
 function renderExpenses(t,c){const filtered=t.expenses.filter(e=>(expenseFilter==='all'||categoryOf(e)===expenseFilter)&&(`${e.name} ${payerLabel(t,e)}`).toLowerCase().includes(expenseQuery.toLowerCase()));return `<section class="panel"><div class="sectiontitle"><div><div class="eyebrow">THE EXPENSE LEDGER</div><h2>Every expense, easy to check.</h2><p class="subtext">Find any expense, check who paid and review each person’s share.</p></div><button class="btn sun" id="addExpenseInline">＋ Add expense</button></div><div class="toolbar"><input class="input" id="expenseSearch" placeholder="⌕ Search expenses or payer" aria-label="Search expenses" value="${esc(expenseQuery)}"><select id="expenseCategory" class="select" aria-label="Filter by category">${['all','Transport','Food','Stay','Activities','Other'].map(x=>`<option value="${x}" ${expenseFilter===x?'selected':''}>${x==='all'?'All categories':x}</option>`).join('')}</select></div><div class="expense-list">${filtered.length?filtered.map(e=>v8ExpenseRow(t,e)).join(''):'<div class="empty"><div class="illustration">⌕</div><b>No matching expenses</b><p class="note">Try a different search or add a new cost.</p></div>'}</div><p class="soft-label">${filtered.length} of ${t.expenses.length} expenses shown</p></section><section class="panel"><div class="panelhead"><h3>Trip insights</h3><span class="chip">Live calculations</span></div><div class="peoplegroup"><div class="membercard"><strong>${t.expenses.length}</strong><span>Expenses logged</span></div><div class="membercard"><strong>${money(c.total)}</strong><span>Grand total</span></div><div class="membercard"><strong>${t.travellers.length}</strong><span>Travellers</span></div></div></section>`}
 function renderTravellers(t,c){return `<section class="panel"><div class="sectiontitle"><div><div class="eyebrow">THE PEOPLE BEHIND THE TRIP</div><h2>Name your families.</h2><p class="subtext">Tap a family card to enter its real name. Changes appear automatically throughout Home, Expenses, Split and Settle on this device.</p></div><div class="actions np-people-head-actions"><button class="btn ghost" id="shareFromPeople" type="button">↗ Share trip</button><button class="btn violet" id="addFamily">＋ Add family</button></div></div><div class="v8-people-summary"><span>${t.households.length}<small>Families</small></span><span>${t.travellers.length}<small>Travellers</small></span></div><div class="v8-card-list">${t.households.map((h,i)=>{const members=t.travellers.filter(p=>p.householdId===h.id),open=v8PeopleOpen===h.id;return `<article class="v8-allocation"><button class="v8-allocation-head" data-v8-people="${esc(h.id)}" aria-expanded="${open}"><span class="v8-avatar" style="--av:${V8_COLORS[i%V8_COLORS.length]}">${esc(h.name.slice(0,2).toUpperCase())}</span><span class="v8-allocation-name"><strong>${esc(h.name)}</strong><small>${members.length} people · ${money(c.owed[h.id]||0)} share</small></span><span class="v8-chevron">⌄</span></button><div class="np-family-action-row"><button type="button" class="np-rename-family" data-rename-family="${esc(h.id)}" aria-label="Edit name of ${esc(h.name)}">✎ Edit family name</button></div>${open?`<div class="v8-allocation-body"><div class="v8-people-fields"><label class="v8-person-edit np-family-name-field"><span class="v8-member-initial">✎</span><span class="v8-input-wrap"><small>Family name</small><input class="input" data-family-name="${esc(h.id)}" value="${esc(h.name)}" aria-label="Family name for ${esc(h.name)}" placeholder="e.g. Family name" maxlength="70" autocomplete="off"></span></label>${members.map((p,i)=>`<label class="v8-person-edit"><span class="v8-member-initial">${esc((p.name||'P').slice(0,1).toUpperCase())}</span><span class="v8-input-wrap"><small>Traveller ${i+1}</small><input class="input" data-name="${esc(p.id)}" value="${esc(p.name||'')}" aria-label="Traveller ${i+1} name" placeholder="Add name" maxlength="55"></span></label>`).join('')}</div><div class="actions"><button class="btn mini ghost" data-newperson="${esc(h.id)}">＋ Add person</button><button class="btn mini sun" id="saveNames">Save family & people</button></div></div>`:''}</article>`}).join('')||'<div class="empty"><b>Build your circle</b><p>Add the first family to begin.</p></div>'}</div></section>`}
-function summary(t,c){return [t.name.toUpperCase(),'Travellers: '+t.travellers.length,'Trip total: '+money(c.total),'', 'FAMILY SHARES',...t.households.map(h=>`${h.name} (${t.travellers.filter(p=>p.householdId===h.id).length}): ${money(c.owed[h.id]||0)}`),'','PAYMENTS TO MAKE',...(c.transfers.length?c.transfers.map(x=>`${nm(t,x.from)} pays ${nm(t,x.to)}: ${money(x.amount)}`):['All settled']),'','Expenses:',...t.expenses.map(e=>`${e.name} · ${money(e.amount)} · paid by ${nm(t,e.payerHouseholdId)}`),'','Payment claims are not payment confirmations.'].join('\n')}
+function summary(t,c){
+ const direct=directExpenseCharges(t,c);
+ const payee=d=>d.payeeName||nm(t,d.to);
+ return [
+ t.name.toUpperCase(),
+ 'Travellers: '+t.travellers.length,
+ 'Trip total: '+money(c.total),
+ '',
+ 'FAMILY ALLOCATED SHARES',
+ ...t.households.map(h=>h.name+' ('+t.travellers.filter(p=>p.householdId===h.id).length+' people): '+money(c.owed[h.id]||0)),
+ '',
+ 'DIRECT CHARGES — TO ORIGINAL PAYERS (BEFORE PAYMENTS)',
+ ...(direct.length?direct.flatMap(d=>[
+   nm(t,d.from)+' pays '+payee(d)+': '+money(d.amount),
+   ...d.expenses.map(e=>'  '+e.name+' · '+e.passengers+' selected people · '+money(e.amount)),
+   ...d.expenses.flatMap(e=>e.people.map(p=>'    '+p.name+' · '+money(p.amount)))
+ ]):['No direct inter-family charges']),
+ '',
+ 'ALTERNATIVE: NET SETTLEMENT (OFFSETS ALL EXPENSES & CONFIRMED PAYMENTS)',
+ ...(c.transfers.length?c.transfers.map(x=>nm(t,x.from)+' pays '+nm(t,x.to)+': '+money(x.amount)):['No net balance due']),
+ '',
+ 'DO NOT PAY BOTH LISTS. They are alternative ways of understanding the same expenses.',
+ 'Direct charges list original shares; net settlement reflects recorded confirmed payments.',
+ '',
+ 'EXPENSES',
+ ...t.expenses.map(e=>e.name+' · '+money(e.amount)+' · paid by '+(e.payerTravellerId?(t.travellers.find(p=>p.id===e.payerTravellerId)?.name||nm(t,e.payerHouseholdId)):nm(t,e.payerHouseholdId))),
+ '',
+ 'Payment claims are not payment confirmations.'
+ ].join('\n');
+}
 
 // Transparent allocation ledger: every row is built directly from the engine, never from rounded display values.
 function allocationsFor(t,c,e){return c.allocations.filter(a=>a.expenseId===e.id)}
