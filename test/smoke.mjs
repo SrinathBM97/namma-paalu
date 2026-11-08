@@ -112,7 +112,7 @@ globalThis.preserveQC={
  homePicker:homeCarAfter.includes('data-np-home-ledger="car:familyb"'),
  homeOriginalUnchanged:homeBefore.includes('₹4,163.59')&&homeOriginalAfter.includes('₹4,163.59'),
  homeOriginalExpenseUnchanged:homeOriginalAfter.includes('₹23,630.00')&&homeOriginalAfter.includes('Group tickets'),
- homeCarScoped:homeCarAfter.includes('Car 2 petrol')&&homeCarAfter.includes('Car 2 toll')&&!homeCarAfter.includes('Group tickets'),
+ homeCarScoped:homeCarAfter.includes('Second car petrol')&&homeCarAfter.includes('Second car toll')&&!homeCarAfter.includes('Group tickets'),
  originalBalanceIntact:oldOriginalBalance===originalLedgerBalance,
  outstandingAdds:summaryOutstanding===base.remaining+140000,
  legacyFirstCar:expenseBucket(added,added.expenses[0])==='main'
