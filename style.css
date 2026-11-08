@@ -298,3 +298,84 @@ body[data-view="breakdown"] #content>.v8-split-intro>.sectiontitle{justify-conte
 @media (max-width:1050px) { .v6-home .hero-art { min-height:150px; gap:4px; } .v6-home .hero-art .bubble { display:none; } }
 @media (max-width:700px) { .v6-home .hero-art { min-height:106px; padding:0; } .v6-home .hero-art img { width:min(100%,108px); } }
 @media (max-width:390px) { .v6-home .hero-art img { width:min(100%,82px); } }
+
+/* V8.6: Hero art remains animated and readable on mobile.
+   Overrides older mobile rules that hid the caption cards. */
+@keyframes np86-hero-float {
+  0%,100% { transform:translate3d(0,0,0); }
+  50% { transform:translate3d(0,-7px,0); }
+}
+@keyframes np86-caption-enter {
+  from { opacity:0; transform:translate3d(0,9px,0); }
+  to { opacity:1; transform:translate3d(0,0,0); }
+}
+.v6-home .hero-art img {
+  animation:np86-hero-float 4.8s ease-in-out infinite;
+  will-change:transform;
+}
+.v6-home .hero-art .bubble {
+  animation:np86-caption-enter .65s ease-out both;
+}
+.v6-home .hero-art .b1 { animation-delay:.12s; }
+.v6-home .hero-art .b2 { animation-delay:.28s; }
+@media (min-width:701px) and (max-width:1050px) {
+  .v6-home .hero-art .bubble { display:block; }
+  .v6-home .hero-art { gap:9px; min-height:230px; }
+  .v6-home .hero-art img { width:min(138px,75%); }
+}
+@media (max-width:700px) {
+  .v6-home .hero {
+    grid-template-columns:minmax(0,1fr) !important;
+    gap:17px;
+  }
+  .v6-home .hero-art {
+    grid-column:1 / -1;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    justify-items:center;
+    align-items:center;
+    gap:11px 12px;
+    min-height:0;
+    padding:6px 0 3px;
+    width:100%;
+  }
+  .v6-home .hero-art img {
+    grid-column:1/-1;
+    width:clamp(108px,39vw,162px) !important;
+    max-width:58%;
+    height:auto;
+    justify-self:center;
+    filter:drop-shadow(0 14px 21px #08091090);
+  }
+  .v6-home .hero-art .bubble {
+    display:block !important;
+    position:relative;
+    top:auto;right:auto;bottom:auto;left:auto;
+    margin:0;
+    width:100%;
+    box-sizing:border-box;
+    padding:10px 11px;
+    border-radius:13px;
+    font-size:clamp(10px,2.8vw,12px);
+    line-height:1.35;
+    overflow-wrap:anywhere;
+    text-align:left;
+  }
+  .v6-home .hero-art .bubble strong {
+    font-size:clamp(12px,3.5vw,15px);
+    white-space:normal;
+  }
+  .v6-home .hero-art .b1,
+  .v6-home .hero-art .b2 {
+    align-self:stretch;
+    justify-self:stretch;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .v6-home .hero-art img,
+  .v6-home .hero-art .bubble {
+    animation:none !important;
+    transform:none !important;
+    will-change:auto;
+  }
+}
