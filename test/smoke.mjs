@@ -16,4 +16,16 @@ assert.ok(js.includes('Family renamed'),'Family rename action missing');
 assert.ok(js.includes('family.name=name'),'Family name persistence missing');
 assert.ok(js.includes('const nm=(t,id)=>t.households.find'),'Dynamic family name lookup missing');
 
-console.log('Syntax, family renaming, and baseline wiring checks passed.');
+
+// Shared snapshot links must remain view-only and preserve their URL fragment through navigation.
+assert.ok(html.includes('id="shareTripLink"'),'Share trip button missing');
+assert.ok(html.includes('id="npSnapshotNotice"'),'Shared snapshot notice missing');
+assert.ok(js.includes("new CompressionStream('gzip')"),'Compressed snapshot encoding missing');
+assert.ok(js.includes("new DecompressionStream('gzip')"),'Compressed snapshot decoding missing');
+assert.ok(js.includes("url.hash='#/overview?share='+payload"),'Snapshot must use URL fragment');
+assert.ok(js.includes("location.hash.split('?')[1]"),'Snapshot fragment import missing');
+assert.ok(js.includes('await npLoadSharedTrip()'),'Snapshot boot import missing');
+assert.ok(js.includes("const share=sharedView?"),'Snapshot must persist across navigation');
+assert.ok(js.includes("document.body.classList.add('np-shared-view')"),'Shared view read-only state missing');
+
+console.log('Syntax, family renaming, sharing, and baseline wiring checks passed.');
