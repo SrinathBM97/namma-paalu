@@ -122,4 +122,11 @@ assert.equal(context.carQC.changedDirect,95000,'Changing petrol participants rec
 assert.equal(context.carQC.changedCar2Petrol,75000,'4-way car petrol after one person deselected');
 assert.equal(context.carQC.car1Unchanged,84000,'Unrelated car charge unchanged');
 
+
+assert.ok(js.includes("function directExpenseCharges("),'Per-expense direct charges must exist');
+assert.ok(js.includes("let npSettleMode='direct'"),'Direct passenger charges must be default');
+assert.ok(js.includes("(e?e.participants.includes(p.id):false)"),'New expenses must NOT silently preselect all passengers');
+assert.ok(js.includes("Included travellers"),'Detailed expense allocations must show selected participants');
+assert.ok(js.includes("data-np-settle-mode"),'Direct/net settlement switch must exist');
+
 console.log('Syntax, family renaming, sharing, and baseline wiring checks passed.');
