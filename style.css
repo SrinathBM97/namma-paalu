@@ -464,3 +464,9 @@ body[data-view="breakdown"] #content>.v8-split-intro>.sectiontitle{justify-conte
 .np-shared-view input[data-name],
 .np-shared-view input[data-family-name]{pointer-events:none;opacity:.7;}
 @media(max-width:700px){.np-share-link{width:100%;justify-content:center}.np-snapshot-notice{margin:11px 0 15px;padding:11px 13px;font-size:12px;}}
+
+/* Share dialog: reveal exactly which families are in the generated link. */
+.np-share-names{background:linear-gradient(125deg,rgba(135,59,255,.18),rgba(255,210,49,.06));border:1px solid rgba(184,143,242,.35);padding:14px 16px;border-radius:14px;color:#f3eaff;font-weight:700;line-height:1.65;overflow-wrap:anywhere;}
+.np-share-url{display:block;min-height:100px;max-height:155px;font-family:ui-monospace,SFMono-Regular,monospace!important;line-height:1.5!important;font-size:12px!important;word-break:break-all;overflow-wrap:anywhere;resize:vertical;width:100%;box-sizing:border-box;}
+.np-people-head-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;align-items:center;}
+@media(max-width:700px){.np-people-head-actions{width:100%;justify-content:stretch;}.np-people-head-actions .btn{flex:1;min-width:0;}}
