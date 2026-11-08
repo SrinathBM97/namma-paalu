@@ -28,4 +28,12 @@ assert.ok(js.includes('await npLoadSharedTrip()'),'Snapshot boot import missing'
 assert.ok(js.includes("const share=sharedView?"),'Snapshot must persist across navigation');
 assert.ok(js.includes("document.body.classList.add('np-shared-view')"),'Shared view read-only state missing');
 
+
+assert.ok(js.includes("openModal('Your trip viewing link',content)"),'Share preview modal missing');
+assert.ok(js.includes("labelList=t.households.map"),'Exact household preview missing');
+assert.ok(js.includes("id=\"npCopyLink\""),'Copy link control missing');
+assert.ok(js.includes("id=\"npPreviewLink\""),'Recipient preview action missing');
+assert.ok(js.includes("shareFromPeople"),'People page share action missing');
+assert.ok(js.includes("Name your families before sharing"),'Placeholder-name guard missing');
+
 console.log('Syntax, family renaming, sharing, and baseline wiring checks passed.');
