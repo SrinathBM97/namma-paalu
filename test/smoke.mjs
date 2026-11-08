@@ -89,8 +89,8 @@ const laterDirect=directExpenseCharges(laterTrip,laterCalc);
 const original=JSON.parse(JSON.stringify(trip()));
 const base=calculateTrip(original);
 const added=JSON.parse(JSON.stringify(original));
-added.expenses.push({id:'surya2petrol',name:'Surya car petrol',payerHouseholdId:'familyb',amount:300000,participants:['familyb-1','familyb-2','familyb-3','familyc-1','familyc-2']});
-added.expenses.push({id:'surya2toll',name:'Surya car toll',payerHouseholdId:'familyb',amount:50000,participants:['familyb-1','familyb-2','familyb-3','familyc-1','familyc-2']});
+added.expenses.push({id:'secondCarPetrol',name:'Second car petrol',payerHouseholdId:'familyb',amount:300000,participants:['familyb-1','familyb-2','familyb-3','familyc-1','familyc-2']});
+added.expenses.push({id:'secondCarToll',name:'Second car toll',payerHouseholdId:'familyb',amount:50000,participants:['familyb-1','familyb-2','familyb-3','familyc-1','familyc-2']});
 const separated=settlementLedgers(added),main=separated.find(g=>g.id==='main'),car2=separated.find(g=>g.id==='car:familyb');
 globalThis.preserveQC={
  mainSame:JSON.stringify(main?.calc.transfers)===JSON.stringify(base.transfers),
@@ -133,7 +133,7 @@ assert.equal(context.smoke.hasBreakdown,true);
 assert.equal(context.smoke.total,2363000);
 assert.equal(context.smoke.peopleHasRename,true);
 assert.equal(context.smoke.splitHasRename,false);
-assert.equal(context.preserveQC.mainSame,true,'Adding Surya car must not change a single original settlement transfer');
+assert.equal(context.preserveQC.mainSame,true,'Adding another car must not change a single original settlement transfer');
 assert.equal(context.preserveQC.mainTotal,2363000);
 assert.equal(context.preserveQC.carTotal,350000);
 assert.equal(context.preserveQC.carTransfer,140000);
