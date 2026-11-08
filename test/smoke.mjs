@@ -164,10 +164,10 @@ assert.ok(js.includes("function directExpenseCharges("),'Per-expense direct char
 assert.ok(js.includes('function settlementLedgers('),'Independent car ledgers must exist');
 assert.ok(js.includes("(e?e.participants.includes(p.id):false)"),'New expenses must NOT silently preselect all passengers');
 assert.ok(js.includes("Included travellers"),'Detailed expense allocations must show selected participants');
-assert.ok(js.includes("data-np-settle-mode"),'Direct/net settlement switch must exist');
+assert.ok(js.includes('data-ledger-group'),'Independent ledger cards must render');
 
-assert.ok(js.includes('DIRECT CHARGES — TO ORIGINAL PAYERS'),'Shared summary must show direct charges');
-assert.ok(js.includes('DO NOT PAY BOTH LISTS'),'Shared summary must distinguish direct and net');
+assert.ok(js.includes('INDEPENDENT SETTLEMENTS — NEVER COMBINE DIFFERENT CARS'),'Summary must keep cars separate');
+assert.ok(js.includes('Car settlements stay separate'),'Summary must not offset across cars');
 assert.ok(js.includes('function v8ExpenseDetails(t,e)'),'Expense breakdown renderer missing');
 
 console.log('Syntax, family renaming, sharing, and baseline wiring checks passed.');
