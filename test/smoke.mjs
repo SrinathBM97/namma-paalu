@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const js=fs.readFileSync('app.js','utf8');
+const html=fs.readFileSync('index.html','utf8');
+const css=fs.readFileSync('style.css','utf8');
+new vm.Script(js,{filename:'app.js'});
+for(const id of ['homeOnly','content','pageIntro','tripTitle','currentTripTop','total','members','remaining'])assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
+for(const page of ['overview','expenses','breakdown','travellers','settlements','activity'])assert.ok(js.includes(page+':'),'Missing route '+page);
+assert.ok(html.includes('app.js?v='),'Versioned script reference missing');
+assert.ok(css.includes('.v6-home .hero-art'),'Hero styles missing');
+console.log('Syntax and baseline wiring checks passed.');
