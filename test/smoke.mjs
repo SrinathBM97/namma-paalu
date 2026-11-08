@@ -44,4 +44,38 @@ assert.ok(js.includes("function openCalculationPage()"),'Calculation route actio
 assert.ok(js.includes("go('breakdown')"),'Calculation action must enter Split');
 assert.ok(js.includes("main.style.animation='none'"),'Route must not remain hidden behind animation');
 
+
+// Actual function execution, not just text matching: catch ReferenceErrors in view renderers.
+const nodes=new Map();
+const node=id=>({id,hidden:false,textContent:'',innerHTML:'',style:{},dataset:{},classList:{toggle(){},add(){},remove(){}},setAttribute(){},removeAttribute(){},addEventListener(){},animate(){},querySelector(){return null},querySelectorAll(){return []}});
+const fakeDocument={
+ getElementById(id){if(!nodes.has(id))nodes.set(id,node(id));return nodes.get(id)},
+ querySelectorAll(){return []},querySelector(){return null},addEventListener(){},
+ body:{dataset:{},classList:{add(){}}},
+ createElement(){return {innerHTML:'',content:{querySelector(){return null}}}}
+};
+const fakeLocation={hash:'#/settlements',href:'https://example.org/#/settlements'};
+const fakeHistory={pushState(_a,_b,hash){fakeLocation.hash=hash;fakeLocation.href='https://example.org/'+hash}};
+const runtime=js.slice(0,js.indexOf("$('closeModal').onclick="));
+assert.ok(runtime.length>30000,'Could not isolate application functions');
+const scenario=runtime+String.raw\`
+ tab='settlements';render();
+ const before=document.body.dataset.view;
+ const button=document.getElementById('content').innerHTML.includes('data-view-calculation="breakdown"');
+ openCalculationPage();
+ const after=document.body.dataset.view;
+ const content=document.getElementById('content').innerHTML;
+ globalThis.smoke={before,button,after,url:location.hash,hasBreakdown:content.includes('Expense-level explanation'),total:calc().total,peopleHasRename:renderTravellers(trip(),calc()).includes('data-rename-family'),splitHasRename:content.includes('data-rename-family')};
+\`;
+const context={document:fakeDocument,localStorage:{getItem(){return null},setItem(){}},location:fakeLocation,window:{scrollTo(){},matchMedia(){return {matches:false}}},history:fakeHistory,console};
+vm.runInNewContext(scenario,context,{timeout:2000});
+assert.equal(context.smoke.before,'settlements');
+assert.equal(context.smoke.button,true);
+assert.equal(context.smoke.after,'breakdown');
+assert.equal(context.smoke.url,'#/breakdown');
+assert.equal(context.smoke.hasBreakdown,true);
+assert.equal(context.smoke.total,2363000);
+assert.equal(context.smoke.peopleHasRename,true);
+assert.equal(context.smoke.splitHasRename,false);
+
 console.log('Syntax, family renaming, sharing, and baseline wiring checks passed.');
