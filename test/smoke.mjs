@@ -92,6 +92,15 @@ const added=JSON.parse(JSON.stringify(original));
 added.expenses.push({id:'secondCarPetrol',name:'Second car petrol',payerHouseholdId:'familyb',amount:300000,participants:['familyb-1','familyb-2','familyb-3','familyc-1','familyc-2']});
 added.expenses.push({id:'secondCarToll',name:'Second car toll',payerHouseholdId:'familyb',amount:50000,participants:['familyb-1','familyb-2','familyb-3','familyc-1','familyc-2']});
 const separated=settlementLedgers(added),main=separated.find(g=>g.id==='main'),car2=separated.find(g=>g.id==='car:familyb');
+const homeBefore=renderOverview(original,base);
+npHomeLedger='main';
+const homeOriginalAfter=renderOverview(added,calculateTrip(added));
+npHomeLedger='car:familyb';
+const homeCarAfter=renderOverview(added,calculateTrip(added));
+npHomeLedger='main';
+const oldOriginalBalance=base.balances.familyb;
+const originalLedgerBalance=separated.find(g=>g.id==='main').calc.balances.familyb;
+const summaryOutstanding=separated.reduce((sum,g)=>sum+(g.kind==='main'?g.calc.remaining:directExpenseCharges(scopedTrip(added,g),g.calc).reduce((a,d)=>a+d.amount,0)),0);
 globalThis.preserveQC={
  mainSame:JSON.stringify(main?.calc.transfers)===JSON.stringify(base.transfers),
  mainTotal:main?.total,
@@ -100,6 +109,12 @@ globalThis.preserveQC={
  noCross:car2?.calc.transfers.every(x=>x.to==='familyb'),
  splitHasChoices:renderBreakdown(added,calculateTrip(added)).includes('Which settlement?'),
  settlementHasTwoCards:renderSettlements(added,calculateTrip(added)).includes('ORIGINAL SETTLEMENT')&&renderSettlements(added,calculateTrip(added)).includes('SEPARATE CAR SETTLEMENT'),
+ homePicker:homeCarAfter.includes('data-np-home-ledger="car:familyb"'),
+ homeOriginalUnchanged:homeBefore.includes('₹4,163.59')&&homeOriginalAfter.includes('₹4,163.59'),
+ homeOriginalExpenseUnchanged:homeOriginalAfter.includes('₹23,630.00')&&homeOriginalAfter.includes('Group tickets'),
+ homeCarScoped:homeCarAfter.includes('Car 2 petrol')&&homeCarAfter.includes('Car 2 toll')&&!homeCarAfter.includes('Group tickets'),
+ originalBalanceIntact:oldOriginalBalance===originalLedgerBalance,
+ outstandingAdds:summaryOutstanding===base.remaining+140000,
  legacyFirstCar:expenseBucket(added,added.expenses[0])==='main'
 };
 
@@ -141,6 +156,12 @@ assert.equal(context.preserveQC.noCross,true);
 assert.equal(context.preserveQC.splitHasChoices,true);
 assert.equal(context.preserveQC.settlementHasTwoCards,true);
 assert.equal(context.preserveQC.legacyFirstCar,true);
+assert.equal(context.preserveQC.homePicker,true);
+assert.equal(context.preserveQC.homeOriginalUnchanged,true,'Original family Home balance unchanged');
+assert.equal(context.preserveQC.homeOriginalExpenseUnchanged,true,'Original Home expense content unchanged');
+assert.equal(context.preserveQC.homeCarScoped,true,'Second car Home does not include original shared ticket costs');
+assert.equal(context.preserveQC.originalBalanceIntact,true);
+assert.equal(context.preserveQC.outstandingAdds,true,'Overall outstanding adds isolated ledgers without netting');
 assert.equal(context.carQC.total,770000,'Two-car trip total');
 assert.equal(context.carQC.cToB,140000,'Two passengers from Family C owe Family B 1400');
 assert.equal(context.carQC.petrol,120000,'Car 2 petrol two-person cost');
