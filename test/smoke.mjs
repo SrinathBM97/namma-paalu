@@ -68,7 +68,7 @@ const scenario=runtime+String.raw`
  globalThis.smoke={before,button,after,url:location.hash,hasBreakdown:content.includes('Expense-level explanation'),total:calc().total,peopleHasRename:renderTravellers(trip(),calc()).includes('data-rename-family'),splitHasRename:content.includes('data-rename-family')};
 const carHouseholds=['a','b','c','d','e'].map(id=>({id,name:'Family '+id}));
 const carTravellers=[['a',3],['b',3],['c',4],['d',3],['e',1]].flatMap(([hid,n])=>Array.from({length:n},(_,i)=>({id:hid+(i+1),householdId:hid,name:hid+(i+1)})));
-const carExp=(id,payer,amount,participants)=>({id,name:id.replace(/(car\\d)(petrol|toll)/,'$1 $2'),amount,payerHouseholdId:payer,participants});
+const carExp=(id,payer,amount,participants)=>({id,name:id.replace(/(car\d)(petrol|toll)/,'$1 $2'),amount,payerHouseholdId:payer,participants});
 const carTrip={households:carHouseholds,travellers:carTravellers,confirmedPayments:[],expenses:[
  carExp('car1petrol','a',350000,['a1','a2','a3','d1','e1']),
  carExp('car1toll','a',70000,['a1','a2','a3','d1','e1']),
