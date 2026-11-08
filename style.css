@@ -516,3 +516,33 @@ body[data-view="breakdown"] #content>.v8-split-intro>.sectiontitle{justify-conte
 .np-expense-family .v8-break-row span{min-width:0;overflow-wrap:anywhere}
 .np-expense-family .v8-break-row small{display:block;color:#bba9cc;font-size:12px;margin-top:4px}
 .np-expense-family .np-direct-person{padding-inline:12px 0;}
+
+/* V8.12 — independent settlement ledger cards. */
+.np-ledger-list{display:grid;gap:17px;margin-block:18px;}
+.np-ledger-panel{padding:22px!important;overflow:hidden;}
+.np-ledger-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:17px;border-bottom:1px solid rgba(189,151,226,.19);}
+.np-ledger-head>div{flex:1;min-width:0;}
+.np-ledger-head small{display:block;font-size:10px;letter-spacing:.11em;font-weight:800;color:#FFD231;line-height:1.4;}
+.np-ledger-head h3{margin:8px 0;font-size:clamp(18px,2.3vw,25px);line-height:1.25;color:#fff;overflow-wrap:anywhere;}
+.np-ledger-head p{margin:0;max-width:540px;font-size:13px;line-height:1.6;color:#cdbbdd;}
+.np-ledger-total{text-align:right;flex-shrink:0;}
+.np-ledger-total small{font-size:12px;color:#bcabd0;letter-spacing:0;font-weight:500;}
+.np-ledger-total strong{display:block;font-size:clamp(18px,2.2vw,24px);font-variant-numeric:tabular-nums;color:#FFD231;white-space:nowrap;margin-top:4px;}
+.np-ledger-stat-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid rgba(189,151,226,.13);font-size:12px;color:#c9b5d6;}
+.np-ledger-stat-row strong{font-weight:800;margin-left:10px;color:#f2e3ff;font-variant-numeric:tabular-nums;}
+.np-ledger-payments{display:grid;gap:10px;padding-top:13px;}
+.np-ledger-payment{padding:15px;background:rgba(135,59,255,.07);border:1px solid rgba(174,129,219,.2);border-radius:15px;}
+.np-ledger-transfer{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;min-width:0;}
+.np-ledger-transfer>div{min-width:0;}
+.np-ledger-transfer small{display:block;font-size:12px;color:#beaacc;margin-bottom:4px;line-height:1.5;}
+.np-ledger-transfer h4{margin:0;color:#fff;font-size:16px;line-height:1.35;overflow-wrap:anywhere;}
+.np-ledger-transfer>strong{flex:none;font-size:18px;color:#FFD231;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.np-ledger-detail{padding:12px 0 5px;margin-top:12px;border-top:1px solid rgba(180,142,224,.18);}
+.np-ledger-picker{margin-bottom:15px!important;}
+.np-ledger-picker .panelhead{margin-bottom:12px;}
+.np-ledger-choices{display:flex;align-items:stretch;flex-wrap:wrap;gap:9px;}
+.np-ledger-choice{flex:1 1 170px;min-width:0;appearance:none;border:1px solid rgba(177,138,223,.35);background:rgba(135,59,255,.08);color:#d4c2e2;font:inherit;font-size:13px;font-weight:700;line-height:1.35;border-radius:12px;padding:12px 13px;cursor:pointer;transition:background .2s ease,border-color .2s ease;}
+.np-ledger-choice.selected{border-color:#873BFF;background:rgba(135,59,255,.29);color:#fff;}
+.np-ledger-choice:focus-visible{outline:2px solid #FFD231;outline-offset:3px;}
+@media(max-width:700px){.np-ledger-panel{padding:16px!important}.np-ledger-head{gap:9px;flex-wrap:wrap}.np-ledger-total{text-align:left}.np-ledger-stat-row{align-items:flex-start}.np-ledger-stat-row span{overflow-wrap:anywhere}.np-ledger-payment{padding:12px}.np-ledger-transfer>strong{font-size:16px}.np-ledger-choice{flex:1 1 100%;text-align:left}}
+@media(prefers-reduced-motion:reduce){.np-ledger-choice{transition:none}}
