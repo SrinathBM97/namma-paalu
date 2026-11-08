@@ -78,6 +78,10 @@ const carTrip={households:carHouseholds,travellers:carTravellers,confirmedPaymen
 const carCalc=calculateTrip(carTrip),carDirect=directExpenseCharges(carTrip,carCalc);
 const familyCToB=carDirect.find(x=>x.from==='c'&&x.to==='b');
 const carMarkup=renderSettlements(carTrip,carCalc);
+const payerTrip=JSON.parse(JSON.stringify(carTrip));
+payerTrip.expenses.find(e=>e.id==='car2petrol').payerTravellerId='b1';
+payerTrip.expenses.find(e=>e.id==='car2toll').payerTravellerId='b2';
+const payerCharges=directExpenseCharges(payerTrip,calculateTrip(payerTrip));
 const laterTrip=JSON.parse(JSON.stringify(carTrip));laterTrip.expenses.find(e=>e.id==='car2petrol').participants=['b1','b2','b3','c1'];
 const laterCalc=calculateTrip(laterTrip);
 const laterDirect=directExpenseCharges(laterTrip,laterCalc);
@@ -95,6 +99,9 @@ globalThis.carQC={
  changedDirect:laterDirect.find(x=>x.from==='c'&&x.to==='b')?.amount,
  changedCar2Petrol:laterDirect.find(x=>x.from==='c'&&x.to==='b')?.expenses.find(e=>e.id==='car2petrol')?.amount,
  car1Unchanged:laterDirect.find(x=>x.from==='d'&&x.to==='a')?.amount,
+ namedPayerCount:payerCharges.filter(x=>x.from==='c'&&x.to==='b').length,
+ namedPayerNames:payerCharges.filter(x=>x.from==='c'&&x.to==='b').map(x=>x.payeeName),
+ namedPayerAmounts:payerCharges.filter(x=>x.from==='c'&&x.to==='b').map(x=>x.amount),
  splitTotalMatches:carCalc.total===770000
 };
 `;
@@ -121,6 +128,10 @@ assert.equal(context.carQC.defaultMode,true,'Direct expense charges default');
 assert.equal(context.carQC.changedDirect,95000,'Changing petrol participants recalculates only the selected shares');
 assert.equal(context.carQC.changedCar2Petrol,75000,'4-way car petrol after one person deselected');
 assert.equal(context.carQC.car1Unchanged,84000,'Unrelated car charge unchanged');
+assert.equal(context.carQC.namedPayerCount,2,'Two different named payers must be separate');
+assert.deepEqual(Array.from(context.carQC.namedPayerNames),['b1','b2']);
+assert.deepEqual(Array.from(context.carQC.namedPayerAmounts),[120000,20000]);
+
 
 
 assert.ok(js.includes("function directExpenseCharges("),'Per-expense direct charges must exist');
