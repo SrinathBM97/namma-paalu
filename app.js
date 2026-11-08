@@ -433,7 +433,7 @@ function expenseModal(existing=null){
   if(e||ledgerWasEdited)return;
   const payer=$('epayer').value;
   const family=payer.startsWith('h:')?payer.slice(2):payer.startsWith('p:')?t.travellers.find(p=>p.id===payer.slice(2))?.householdId:null;
-  const petrolOrToll=/\\b(petrol|fuel|toll)\\b/i.test($('ename').value);
+  const petrolOrToll=/\b(petrol|fuel|toll)\b/i.test($('ename').value);
   ledgerInput.value=(family&&family!==originalCarPayer(t)&&petrolOrToll)?'car':'main';
  };
  $('epayer').addEventListener('change',suggestLedger);
