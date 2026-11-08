@@ -91,6 +91,80 @@ const KEY='namma-paalu-premium-v7';const OLDKEY='namma-paalu-premium-v6';const O
 const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=formatRupees;const uid=()=>('id-'+Date.now().toString(36)+Math.random().toString(36).slice(2,7));const deep=x=>JSON.parse(JSON.stringify(x));
 let trips,active,tab='overview',toastTimer,splitView='family',splitFamily='all',expandedExpense=null,expenseQuery='',expenseFilter='all',undoRecord=null,undoTimer=null;try{const st=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLDKEY)||localStorage.getItem(OLDERKEY)||localStorage.getItem(OLDESTKEY));if(!Array.isArray(st?.trips)||!st.trips.length)throw Error('fresh');trips=st.trips;active=st.active}catch(e){trips=[deep(SAMPLE)];active=SAMPLE.id}
 for(const item of trips){if(item?.id==='outing' && item.name==='Family Outing Demo')item.name='Family Outing';}
+
+/* Shareable, read-only trip snapshot. Encoded in the URL; never sent to the public repository. */
+let sharedView=false;
+function npBase64Url(bytes){let binary='';for(let i=0;i<bytes.length;i++)binary+=String.fromCharCode(bytes[i]);return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function npDecodeBytes(value){const normalized=value.replace(/-/g,'+').replace(/_/g,'/');const binary=atob(normalized.padEnd(Math.ceil(normalized.length/4)*4,'='));return Uint8Array.from(binary,c=>c.charCodeAt(0))}
+async function npEncodeSnapshot(data){
+ const input=new TextEncoder().encode(JSON.stringify(data));
+ if(typeof CompressionStream==='function'){
+   const stream=new Blob([input]).stream().pipeThrough(new CompressionStream('gzip'));
+   return 'g'+npBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()));
+ }
+ return 'u'+npBase64Url(input);
+}
+async function npDecodeSnapshot(encoded){
+ if(typeof encoded!=='string'||encoded.length>120000||encoded.length<12)throw Error('Invalid link');
+ const kind=encoded[0],raw=npDecodeBytes(encoded.slice(1));
+ if(raw.length>150000)throw Error('Link exceeds size limit');
+ let text;
+ if(kind==='g'){
+   if(typeof DecompressionStream!=='function')throw Error('Browser does not support this snapshot format');
+   text=await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+ }else if(kind==='u'){text=new TextDecoder().decode(raw)}
+ else throw Error('Unknown snapshot format');
+ if(text.length>300000)throw Error('Trip is too large');
+ const packet=JSON.parse(text);
+ if(packet?.v!==1 || !packet.trip || !Array.isArray(packet.trip.households) || !Array.isArray(packet.trip.travellers) || !Array.isArray(packet.trip.expenses))throw Error('Invalid snapshot data');
+ // The existing arithmetic engine validates IDs, participants and allocations.
+ calculateTrip(packet.trip);
+ return packet.trip;
+}
+async function npShareTrip(){
+ if(sharedView){showToast('This is a shared, view-only snapshot');return}
+ if(!confirm('Create a viewing link containing this trip’s family names, traveller names and expense amounts? Anyone with the link can read them. This link is a fixed snapshot, not a live shared trip.'))return;
+ try{
+   const t=trip();
+   const view={
+     id:t.id,name:t.name,date:t.date,
+     households:deep(t.households),
+     travellers:deep(t.travellers),
+     expenses:deep(t.expenses),
+     confirmedPayments:deep(t.confirmedPayments||[])
+   };
+   const payload=await npEncodeSnapshot({v:1,trip:view});
+   const url=new URL(location.href);
+   url.searchParams.set('snapshot',payload);
+   url.hash='#/overview';
+   if(url.href.length>16000)throw Error('This trip is too large for a reliable WhatsApp link. Use a shorter summary or secure cloud sharing instead.');
+   try{await navigator.clipboard.writeText(url.href);showToast('Viewing link copied — share it on WhatsApp')}
+   catch(e){window.prompt('Copy the trip viewing link:',url.href)}
+ }catch(e){showToast('Could not create link: '+e.message)}
+}
+async function npLoadSharedTrip(){
+ const payload=new URLSearchParams(location.search).get('snapshot');
+ if(!payload)return false;
+ try{
+   const t=await npDecodeSnapshot(payload);
+   // Sharing must never overwrite the owner's local saved trips.
+   sharedView=true;
+   trips=[t];active=t.id;
+   document.body.classList.add('np-shared-view');
+   const notice=document.getElementById('npSnapshotNotice');
+   if(notice){notice.hidden=false;notice.textContent='Shared trip snapshot · View only · Changes made by the owner after sharing are not included.'}
+   return true;
+ }catch(e){
+   showToast('Could not open shared trip: '+e.message);
+   return false;
+ }
+}
+document.addEventListener('click',event=>{
+ if(!sharedView)return;
+ const blocked=event.target.closest('#addExpenseHero,#newTrip,#addExpenseInlin,#addFamily,#switchTrip,#switchTripTop,#pageAction,#exportData,#importData,[data-edit],[data-delete],[data-newperson],[data-rename-family],[data-claim],#saveNames,#shareTripLink,[data-pick],#modalNewTrip');
+ if(blocked){event.preventDefault();event.stopImmediatePropagation();showToast('View only — ask the trip owner for a new snapshot to see updates')}
+},true);
+
 const trip=()=>trips.find(t=>t.id===active)||trips[0];const save=()=>{try{localStorage.setItem(KEY,JSON.stringify({trips,active}))}catch(e){showToast('Storage is full; export a backup.')}};
 const nm=(t,id)=>t.households.find(x=>x.id===id)?.name||'Unknown';const pn=p=>p.name||'Traveller '+p.id.split('-').pop();const calc=()=>calculateTrip(trip());
 function logAction(t,action,detail){(t.history??=[]).unshift({id:uid(),at:new Date().toISOString(),action,detail});t.history=t.history.slice(0,200)}
@@ -235,9 +309,9 @@ function familyModal(){openModal('Add family / group',`<div class="fields"><labe
 function newTripModal(){openModal('Create your next trip',`<p class="note">Start a fresh trip while reusing your saved families and traveller names.</p><div class="fields"><label class="field wide">Trip name<input class="input" id="newName" placeholder="e.g. Goa Family Vacation" maxlength="80"></label><label class="field wide">Family profiles<select class="select" id="copyPeople"><option value="yes">Reuse current families and people</option><option value="no">Start without travellers</option></select></label></div><div class="actions"><button class="btn sun" id="createTrip">Create trip</button></div>`);$('createTrip').onclick=()=>{const name=$('newName').value.trim();if(!name){showToast('Enter a trip name');return}const old=trip(),copy=$('copyPeople').value==='yes',t={id:uid(),name,date:new Date().toISOString().slice(0,10),households:copy?deep(old.households):[],travellers:copy?deep(old.travellers):[],expenses:[],confirmedPayments:[],claims:[]};if(!copy){t.households=[];t.travellers=[]}trips.unshift(t);active=t.id;save();closeModal();go('overview');showToast('New trip created ✦')}}
 function switchTrip(){openModal('Your trips',`<p class="note">Choose a trip or start a new adventure.</p>${trips.map(t=>`<button class="btn ghost" style="width:100%;text-align:left;margin-bottom:9px;white-space:normal" data-pick="${esc(t.id)}">✦ ${esc(t.name)} <span class="muted">· ${t.expenses.length} expenses</span></button>`).join('')}<div class="actions"><button class="btn sun" id="modalNewTrip">＋ Create trip</button></div>`);document.querySelectorAll('[data-pick]').forEach(x=>x.onclick=()=>{active=x.dataset.pick;save();closeModal();go('overview')});$('modalNewTrip').onclick=newTripModal}
 async function copy(s){try{await navigator.clipboard.writeText(s);showToast('Summary copied ✦')}catch(e){prompt('Copy summary:',s)}}
-$('closeModal').onclick=closeModal;$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});document.querySelectorAll('[data-tab]').forEach(x=>x.onclick=()=>go(x.dataset.tab));$('addExpenseHero').onclick=()=>expenseModal();$('switchTrip').onclick=switchTrip;$('newTrip').onclick=newTripModal;
+$('closeModal').onclick=closeModal;$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});document.querySelectorAll('[data-tab]').forEach(x=>x.onclick=()=>go(x.dataset.tab));$('shareTripLink').onclick=npShareTrip;$('addExpenseHero').onclick=()=>expenseModal();$('switchTrip').onclick=switchTrip;$('newTrip').onclick=newTripModal;
 $('exportData').onclick=()=>{const blob=new Blob([JSON.stringify({trips,active},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='namma-paalu-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)};$('importData').onclick=()=>$('fileInput').click();$('fileInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.trips)||!d.trips.length)throw Error('bad');for(const t of d.trips)calculateTrip(t);if(!confirm('Replace locally saved trips with this backup?'))return;trips=d.trips;active=d.active;save();render();showToast('Backup imported')}catch(err){showToast('Invalid backup: '+err.message)}e.target.value=''};
 $('brandHome').onclick=()=>go('overview');$('switchTripTop').onclick=switchTrip;
 $('pageAction').onclick=()=>{if(tab==='travellers')familyModal();else if(tab==='settlements')go('breakdown');else if(tab==='activity')go('expenses');else expenseModal()};
 window.addEventListener('hashchange',()=>{const next=routeFromHash();if(next!==tab){tab=next;render()}window.scrollTo({top:0,behavior:'instant'})});window.addEventListener('popstate',()=>{const next=routeFromHash();if(next!==tab){tab=next;render()}});
-tab=routeFromHash();render();
+(async()=>{await npLoadSharedTrip();tab=routeFromHash();render()})().catch(e=>{console.error(e);tab='overview';render()});
