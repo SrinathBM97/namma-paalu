@@ -173,7 +173,7 @@ assert.ok(js.includes('function v8ExpenseDetails(t,e)'),'Expense breakdown rende
 
 assert.ok(js.includes('id="eledger"'),'Expense form must choose original vs independent car');
 assert.ok(js.includes("ledgerId:ledger==='car'?'car:'+ph:'main'"),'Expense must retain an independent ledger identifier');
-assert.ok(js.includes('class="np-ledger-picker"'),'Split page must filter by settlement ledger');
+assert.ok(js.includes('class="panel np-ledger-picker"'),'Split page must filter by settlement ledger');
 assert.ok(js.includes('openCalculationPage(x.dataset.ledger'),'Calculation must open the correct car ledger');
 assert.ok(js.includes('function originalCarPayer('),'First car must be retained as original ledger');
 assert.ok(js.includes('function settlementLedgers('),'Independent car groups required');
