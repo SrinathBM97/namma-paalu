@@ -40,7 +40,7 @@ assert.ok(js.includes("Name your families before sharing"),'Placeholder-name gua
 assert.ok(js.includes("chartPanel.addEventListener('click'"),'Wheel segment clicks must use delegated listener after SVG replacement');
 assert.ok(js.includes("chartPanel.addEventListener('keydown'"),'Wheel segments must remain keyboard accessible');
 assert.ok(js.includes("data-view-calculation=\"breakdown\""),'Settlement needs explicit calculation navigation');
-assert.ok(js.includes("function openCalculationPage()"),'Calculation route action missing');
+assert.ok(js.includes("function openCalculationPage("),'Calculation route action missing');
 assert.ok(js.includes("go('breakdown')"),'Calculation action must enter Split');
 assert.ok(js.includes("main.style.animation='none'"),'Route must not remain hidden behind animation');
 
@@ -68,7 +68,7 @@ const scenario=runtime+String.raw`
  globalThis.smoke={before,button,after,url:location.hash,hasBreakdown:content.includes('Expense-level explanation'),total:calc().total,peopleHasRename:renderTravellers(trip(),calc()).includes('data-rename-family'),splitHasRename:content.includes('data-rename-family')};
 const carHouseholds=['a','b','c','d','e'].map(id=>({id,name:'Family '+id}));
 const carTravellers=[['a',3],['b',3],['c',4],['d',3],['e',1]].flatMap(([hid,n])=>Array.from({length:n},(_,i)=>({id:hid+(i+1),householdId:hid,name:hid+(i+1)})));
-const carExp=(id,payer,amount,participants)=>({id,name:id,amount,payerHouseholdId:payer,participants});
+const carExp=(id,payer,amount,participants)=>({id,name:id.replace(/(car\\d)(petrol|toll)/,'$1 $2'),amount,payerHouseholdId:payer,participants});
 const carTrip={households:carHouseholds,travellers:carTravellers,confirmedPayments:[],expenses:[
  carExp('car1petrol','a',350000,['a1','a2','a3','d1','e1']),
  carExp('car1toll','a',70000,['a1','a2','a3','d1','e1']),
@@ -85,6 +85,24 @@ const payerCharges=directExpenseCharges(payerTrip,calculateTrip(payerTrip));
 const laterTrip=JSON.parse(JSON.stringify(carTrip));laterTrip.expenses.find(e=>e.id==='car2petrol').participants=['b1','b2','b3','c1'];
 const laterCalc=calculateTrip(laterTrip);
 const laterDirect=directExpenseCharges(laterTrip,laterCalc);
+
+const original=JSON.parse(JSON.stringify(trip()));
+const base=calculateTrip(original);
+const added=JSON.parse(JSON.stringify(original));
+added.expenses.push({id:'surya2petrol',name:'Surya car petrol',payerHouseholdId:'familyb',amount:300000,participants:['familyb-1','familyb-2','familyb-3','familyc-1','familyc-2']});
+added.expenses.push({id:'surya2toll',name:'Surya car toll',payerHouseholdId:'familyb',amount:50000,participants:['familyb-1','familyb-2','familyb-3','familyc-1','familyc-2']});
+const separated=settlementLedgers(added),main=separated.find(g=>g.id==='main'),car2=separated.find(g=>g.id==='car:familyb');
+globalThis.preserveQC={
+ mainSame:JSON.stringify(main?.calc.transfers)===JSON.stringify(base.transfers),
+ mainTotal:main?.total,
+ carTotal:car2?.total,
+ carTransfer:car2?.calc.transfers.find(x=>x.from==='familyc'&&x.to==='familyb')?.amount,
+ noCross:car2?.calc.transfers.every(x=>x.to==='familyb'),
+ splitHasChoices:renderBreakdown(added,calculateTrip(added)).includes('Which settlement?'),
+ settlementHasTwoCards:renderSettlements(added,calculateTrip(added)).includes('ORIGINAL SETTLEMENT')&&renderSettlements(added,calculateTrip(added)).includes('SEPARATE CAR SETTLEMENT'),
+ legacyFirstCar:expenseBucket(added,added.expenses[0])==='main'
+};
+
 globalThis.carQC={
  total:carCalc.total,
  cToB:familyCToB?.amount,
@@ -94,8 +112,8 @@ globalThis.carQC={
  perPerson:familyCToB?.expenses.find(e=>e.id==='car2petrol')?.people.map(p=>p.amount),
  unrelatedDirect:carDirect.some(x=>x.from==='c'&&x.to==='a'||x.from==='d'&&x.to==='b'),
  netCouldRedirect:carCalc.transfers.some(x=>x.from==='c'&&x.to==='a'),
- renderedMath:carMarkup.includes('2 × ₹600.00 per person = ₹1,200.00'),
- defaultMode:carMarkup.includes('By expense · Direct charges'),
+ renderedMath:carMarkup.includes('2 of 5 selected passengers')&&carMarkup.includes('₹1,200.00'),
+ defaultMode:carMarkup.includes('SEPARATE CAR SETTLEMENT')&&carMarkup.includes('ORIGINAL SETTLEMENT'),
  changedDirect:laterDirect.find(x=>x.from==='c'&&x.to==='b')?.amount,
  changedCar2Petrol:laterDirect.find(x=>x.from==='c'&&x.to==='b')?.expenses.find(e=>e.id==='car2petrol')?.amount,
  car1Unchanged:laterDirect.find(x=>x.from==='d'&&x.to==='a')?.amount,
@@ -115,6 +133,14 @@ assert.equal(context.smoke.hasBreakdown,true);
 assert.equal(context.smoke.total,2363000);
 assert.equal(context.smoke.peopleHasRename,true);
 assert.equal(context.smoke.splitHasRename,false);
+assert.equal(context.preserveQC.mainSame,true,'Adding Surya car must not change a single original settlement transfer');
+assert.equal(context.preserveQC.mainTotal,2363000);
+assert.equal(context.preserveQC.carTotal,350000);
+assert.equal(context.preserveQC.carTransfer,140000);
+assert.equal(context.preserveQC.noCross,true);
+assert.equal(context.preserveQC.splitHasChoices,true);
+assert.equal(context.preserveQC.settlementHasTwoCards,true);
+assert.equal(context.preserveQC.legacyFirstCar,true);
 assert.equal(context.carQC.total,770000,'Two-car trip total');
 assert.equal(context.carQC.cToB,140000,'Two passengers from Family C owe Family B 1400');
 assert.equal(context.carQC.petrol,120000,'Car 2 petrol two-person cost');
@@ -135,7 +161,7 @@ assert.deepEqual(Array.from(context.carQC.namedPayerAmounts),[120000,20000]);
 
 
 assert.ok(js.includes("function directExpenseCharges("),'Per-expense direct charges must exist');
-assert.ok(js.includes("let npSettleMode='direct'"),'Direct passenger charges must be default');
+assert.ok(js.includes('function settlementLedgers('),'Independent car ledgers must exist');
 assert.ok(js.includes("(e?e.participants.includes(p.id):false)"),'New expenses must NOT silently preselect all passengers');
 assert.ok(js.includes("Included travellers"),'Detailed expense allocations must show selected participants');
 assert.ok(js.includes("data-np-settle-mode"),'Direct/net settlement switch must exist');
