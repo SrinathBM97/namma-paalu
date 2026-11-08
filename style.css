@@ -438,3 +438,29 @@ body[data-view="breakdown"] #content>.v8-split-intro>.sectiontitle{justify-conte
 .np-rename-family:active{transform:scale(.98);}
 @media(max-width:700px){.np-family-action-row{padding:0 14px 13px}.np-rename-family{min-height:44px;font-size:13px;}}
 @media(prefers-reduced-motion:reduce){.np-rename-family{transition:none;}}
+
+/* Shareable trip snapshot — read-only, separate from owner's local data */
+.np-share-link{border-color:rgba(255,210,49,.4)!important;color:#ffe39a!important;}
+.np-share-link:focus-visible{outline:2px solid #FFD231;outline-offset:3px;}
+.np-snapshot-notice{margin:13px 0 18px;padding:13px 16px;border:1px solid rgba(255,210,49,.35);background:linear-gradient(120deg,rgba(255,210,49,.1),rgba(135,59,255,.1));color:#eee0c4;border-radius:14px;font-size:13px;line-height:1.5;}
+.np-snapshot-notice[hidden]{display:none!important;}
+.np-shared-view #addExpenseHero,
+.np-shared-view #newTrip,
+.np-shared-view #switchTrip,
+.np-shared-view #switchTripTop,
+.np-shared-view #pageAction,
+.np-shared-view #pageAltAction,
+.np-shared-view #addExpenseInline,
+.np-shared-view #addFamily,
+.np-shared-view #shareTripLink,
+.np-shared-view #exportData,
+.np-shared-view #importData,
+.np-shared-view [data-edit],
+.np-shared-view [data-delete],
+.np-shared-view [data-newperson],
+.np-shared-view [data-rename-family],
+.np-shared-view [data-claim],
+.np-shared-view #saveNames{display:none!important;}
+.np-shared-view input[data-name],
+.np-shared-view input[data-family-name]{pointer-events:none;opacity:.7;}
+@media(max-width:700px){.np-share-link{width:100%;justify-content:center}.np-snapshot-notice{margin:11px 0 15px;padding:11px 13px;font-size:12px;}}
