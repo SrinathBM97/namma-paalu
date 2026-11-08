@@ -430,3 +430,11 @@ body[data-view="breakdown"] #content>.v8-split-intro>.sectiontitle{justify-conte
     transform:none !important;
   }
 }
+
+/* Family rename is a primary People-page action, independent of the traveller editor. */
+.np-family-action-row{display:flex;justify-content:flex-end;gap:8px;padding:0 18px 12px;}
+.np-rename-family{appearance:none;border:1px solid rgba(183,131,248,.55);background:linear-gradient(120deg,rgba(135,59,255,.18),rgba(135,59,255,.06));color:#ebd6ff;padding:10px 14px;border-radius:12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background .2s ease,transform .2s ease,border-color .2s ease;}
+.np-rename-family:hover,.np-rename-family:focus-visible{border-color:#bc8bff;background:rgba(135,59,255,.28);outline-offset:3px;}
+.np-rename-family:active{transform:scale(.98);}
+@media(max-width:700px){.np-family-action-row{padding:0 14px 13px}.np-rename-family{min-height:44px;font-size:13px;}}
+@media(prefers-reduced-motion:reduce){.np-rename-family{transition:none;}}
