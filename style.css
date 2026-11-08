@@ -509,3 +509,10 @@ body[data-view="breakdown"] #content>.v8-split-intro>.sectiontitle{justify-conte
  .np-settle-switch button{font-size:12px;padding:9px 7px!important}
 }
 @media(max-width:365px){.np-settle-switch{grid-template-columns:1fr}.np-direct-header>strong{width:100%;}.np-direct-actions .btn{flex:1 1 100%;}}
+
+/* Transparent per-person allocation when opening an expense. */
+.np-expense-family{border-top:1px solid rgba(180,148,225,.2);padding:9px 0 13px}
+.np-expense-family .v8-break-row{padding:9px 0;align-items:center}
+.np-expense-family .v8-break-row span{min-width:0;overflow-wrap:anywhere}
+.np-expense-family .v8-break-row small{display:block;color:#bba9cc;font-size:12px;margin-top:4px}
+.np-expense-family .np-direct-person{padding-inline:12px 0;}
