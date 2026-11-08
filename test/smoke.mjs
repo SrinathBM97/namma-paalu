@@ -140,4 +140,8 @@ assert.ok(js.includes("(e?e.participants.includes(p.id):false)"),'New expenses m
 assert.ok(js.includes("Included travellers"),'Detailed expense allocations must show selected participants');
 assert.ok(js.includes("data-np-settle-mode"),'Direct/net settlement switch must exist');
 
+assert.ok(js.includes('DIRECT CHARGES — TO ORIGINAL PAYERS'),'Shared summary must show direct charges');
+assert.ok(js.includes('DO NOT PAY BOTH LISTS'),'Shared summary must distinguish direct and net');
+assert.ok(js.includes('function v8ExpenseDetails(t,e)'),'Expense breakdown renderer missing');
+
 console.log('Syntax, family renaming, sharing, and baseline wiring checks passed.');
