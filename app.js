@@ -76,6 +76,22 @@ function calculateTrip(trip) {
   const transfers=settle(balances);
   return {total,paid,owed,balances,allocations,transfers,remaining:transfers.reduce((s,t)=>s+t.amount,0)};
 }
+/** Car costs have independent ledgers per paying car; general trip costs are separate. */
+function expenseBucket(e){
+ if(e.splitGroup==='shared')return 'shared';
+ if(e.splitGroup==='car')return 'car:'+e.payerHouseholdId;
+ return /\b(petrol|fuel|toll)\b/i.test(e.name)?'car:'+e.payerHouseholdId:'shared';
+}
+function expenseBuckets(t){
+ const groups=new Map();
+ for(const e of t.expenses){
+  const id=expenseBucket(e),kind=id==='shared'?'shared':'car',paying=t.households.find(h=>h.id===e.payerHouseholdId);
+  if(!groups.has(id))groups.set(id,{id,kind,label:kind==='car'?(paying?.name||'Unknown')+'’s car':'Shared trip expenses',expenses:[],total:0});
+  const group=groups.get(id);group.expenses.push(e);group.total+=e.amount;
+ }
+ return [...groups.values()].sort((a,b)=>(a.kind===b.kind?0:a.kind==='car'?-1:1)||a.label.localeCompare(b.label));
+}
+
 function directExpenseCharges(t,c){
  const members=Object.fromEntries(t.travellers.map(p=>[p.id,p]));
  const charges=new Map();
@@ -87,8 +103,8 @@ function directExpenseCharges(t,c){
    selected.get(a.householdId).push({id:a.travellerId,name:members[a.travellerId]?.name||'Traveller '+(t.travellers.findIndex(p=>p.id===a.travellerId)+1),amount:a.amount});
   }
   for(const [from,people] of selected){
-   const to=expense.payerHouseholdId,payeeId=expense.payerTravellerId||null,key=JSON.stringify([from,to,payeeId]);
-   if(!charges.has(key))charges.set(key,{from,to,payeeId,payeeName:payeeId?(members[payeeId]?.name||'Traveller '+(t.travellers.findIndex(p=>p.id===payeeId)+1)):null,amount:0,expenses:[]});
+   const to=expense.payerHouseholdId,payeeId=expense.payerTravellerId||null,bucket=expenseBucket(expense),key=JSON.stringify([bucket,from,to,payeeId]);
+   if(!charges.has(key))charges.set(key,{bucket,from,to,payeeId,payeeName:payeeId?(members[payeeId]?.name||'Traveller '+(t.travellers.findIndex(p=>p.id===payeeId)+1)):null,amount:0,expenses:[]});
    const charge=charges.get(key),amount=people.reduce((n,p)=>n+p.amount,0);
    charge.amount+=amount;
    charge.expenses.push({id:expense.id,name:expense.name,amount,passengers:people.length,totalPassengers:expense.participants.length,method:expense.method||'equal',people});
