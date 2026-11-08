@@ -135,15 +135,15 @@ async function npShareTrip(){
    };
    const payload=await npEncodeSnapshot({v:1,trip:view});
    const url=new URL(location.href);
-   url.searchParams.set('snapshot',payload);
-   url.hash='#/overview';
+   url.searchParams.delete('snapshot');
+   url.hash='#/overview?share='+payload;
    if(url.href.length>16000)throw Error('This trip is too large for a reliable WhatsApp link. Use a shorter summary or secure cloud sharing instead.');
    try{await navigator.clipboard.writeText(url.href);showToast('Viewing link copied — share it on WhatsApp')}
    catch(e){window.prompt('Copy the trip viewing link:',url.href)}
  }catch(e){showToast('Could not create link: '+e.message)}
 }
 async function npLoadSharedTrip(){
- const payload=new URLSearchParams(location.search).get('snapshot');
+ const payload=new URLSearchParams(location.hash.split('?')[1]||'').get('share');
  if(!payload)return false;
  try{
    const t=await npDecodeSnapshot(payload);
@@ -173,7 +173,7 @@ function showToast(s){const e=$('toast');e.textContent=s;e.classList.add('show')
 function animateText(id,txt){const e=$(id);if(e.textContent!==txt){e.textContent=txt;e.animate([{opacity:.45,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:380,easing:'ease-out'})}}
 const PAGE_INFO={overview:{label:'HOME',title:'Everyone included. Every expense explained.',desc:'See the spending and balances for this trip.'},expenses:{label:'EXPENSE LEDGER',title:'All trip expenses',desc:'Find an expense, see who paid, and check how it was split.',action:'＋ Add expense'},breakdown:{label:'DETAILED SPLIT',title:'How every share adds up.',desc:'See the amount assigned to each family or traveller, expense by expense.',action:'＋ Add expense'},travellers:{label:'YOUR CIRCLE',title:'Your people',desc:'Add families and travellers, then choose who shares each expense.',action:'＋ Add family'},settlements:{label:'SETTLEMENTS',title:'Who pays whom',desc:'Review suggested transfers based on each person’s share and payments.',action:'View detailed split'},activity:{label:'CHANGE HISTORY',title:'Activity',desc:'See edits made on this device. This is not a shared audit history.',action:'Back to expenses'}};
 const routeNames=Object.keys(PAGE_INFO);
-function routeFromHash(){const raw=location.hash.replace(/^#\/?/,'');return routeNames.includes(raw)?raw:'overview'}
+function routeFromHash(){const raw=location.hash.replace(/^#\/?/,'').split('?')[0];return routeNames.includes(raw)?raw:'overview'}
 function updateScreenShell(t,c){
  const home=tab==='overview';document.body.dataset.view=tab;
  $('homeOnly').hidden=!home;$('pageIntro').hidden=home;
@@ -280,7 +280,7 @@ function attach(){const t=trip();$('expenseSearch')?.addEventListener('input',e=
  document.querySelectorAll('[data-v8-activity]').forEach(x=>x.onclick=()=>{v8ActivityFilter=x.dataset.v8Activity;render()});
  document.querySelectorAll('[data-v8-cell]').forEach(x=>x.onclick=()=>{const [id,eid,kind]=x.dataset.v8Cell.split('|');const e=t.expenses.find(z=>z.id===eid);const am=shareFor(allocationsFor(t,calc(),e),id,kind);openModal('How this share was calculated',`<div class="v8-detail-grid"><span>Expense<strong>${esc(e.name)}</strong></span><span>Full amount<strong>${money(e.amount)}</strong></span><span>Your share<strong>${money(am)}</strong></span></div><p class="note">${e.participants.length} selected participants. Split method: ${esc(e.method||'equal')}.</p>`)});
  }
-function go(t){if(!routeNames.includes(t))return;tab=t;render();try{if(location.hash!=='#/'+t)history.pushState({view:t},'', '#/'+t)}catch(e){}window.scrollTo({top:0,behavior:'instant'})}
+function go(t){if(!routeNames.includes(t))return;tab=t;render();try{const share=sharedView?new URLSearchParams(location.hash.split('?')[1]||'').get('share'):null;const dest='#/'+t+(share?'?share='+share:'');if(location.hash!==dest)history.pushState({view:t},'',dest)}catch(e){}window.scrollTo({top:0,behavior:'instant'})}
 function openModal(title,content){$('modalTitle').textContent=title;$('modalContent').innerHTML=content;$('modal').classList.add('open');$('modal').querySelector('input,select,button')?.focus()}
 function closeModal(){$('modal').classList.remove('open')}
 function expenseModal(existing=null){
