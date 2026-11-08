@@ -77,19 +77,40 @@ function calculateTrip(trip) {
   return {total,paid,owed,balances,allocations,transfers,remaining:transfers.reduce((s,t)=>s+t.amount,0)};
 }
 /** Car costs have independent ledgers per paying car; general trip costs are separate. */
-function expenseBucket(e){
- if(e.splitGroup==='shared')return 'shared';
+function originalCarPayer(t){
+ const original=t.expenses.find(e=>e.id==='petrol')||t.expenses.find(e=>/\b(petrol|fuel|toll)\b/i.test(e.name));
+ return original?.payerHouseholdId||null;
+}
+/** Independent settlement ledger: main = original shared trip + first car. */
+function expenseBucket(t,e){
+ if(e.ledgerId==='main'||e.splitGroup==='shared')return 'main';
+ if(typeof e.ledgerId==='string'&&e.ledgerId.startsWith('car:')&&e.ledgerId.length>4)return e.ledgerId;
  if(e.splitGroup==='car')return 'car:'+e.payerHouseholdId;
- return /\b(petrol|fuel|toll)\b/i.test(e.name)?'car:'+e.payerHouseholdId:'shared';
+ const original=originalCarPayer(t);
+ // Migrate previously added second-car petrol/tolls without altering existing local records.
+ if(original&&/\b(petrol|fuel|toll)\b/i.test(e.name)&&e.payerHouseholdId!==original)return 'car:'+e.payerHouseholdId;
+ return 'main';
 }
 function expenseBuckets(t){
  const groups=new Map();
+ const mainPayer=originalCarPayer(t);
+ const initialLabel=mainPayer?(t.households.find(h=>h.id===mainPayer)?.name||'First car')+'’s car + shared trip':'Original trip settlement';
+ groups.set('main',{id:'main',kind:'main',label:initialLabel,expenses:[],total:0});
  for(const e of t.expenses){
-  const id=expenseBucket(e),kind=id==='shared'?'shared':'car',paying=t.households.find(h=>h.id===e.payerHouseholdId);
-  if(!groups.has(id))groups.set(id,{id,kind,label:kind==='car'?(paying?.name||'Unknown')+'’s car':'Shared trip expenses',expenses:[],total:0});
-  const group=groups.get(id);group.expenses.push(e);group.total+=e.amount;
+  const id=expenseBucket(t,e);
+  if(!groups.has(id)){
+   const payerId=id.slice(4),payer=t.households.find(h=>h.id===payerId);
+   groups.set(id,{id,kind:'car',label:(payer?.name||'Another family')+'’s car',expenses:[],total:0});
+  }
+  const g=groups.get(id);g.expenses.push(e);g.total+=e.amount;
  }
- return [...groups.values()].sort((a,b)=>(a.kind===b.kind?0:a.kind==='car'?-1:1)||a.label.localeCompare(b.label));
+ return [...groups.values()].filter(g=>g.expenses.length||g.kind==='main');
+}
+function scopedTrip(t,group){
+ return {...t,expenses:group.expenses,confirmedPayments:(t.confirmedPayments||[]).filter(p=>(p.ledgerId||'main')===group.id)};
+}
+function settlementLedgers(t){
+ return expenseBuckets(t).map(g=>({...g,calc:calculateTrip(scopedTrip(t,g))}));
 }
 
 function directExpenseCharges(t,c){
@@ -103,7 +124,7 @@ function directExpenseCharges(t,c){
    selected.get(a.householdId).push({id:a.travellerId,name:members[a.travellerId]?.name||'Traveller '+(t.travellers.findIndex(p=>p.id===a.travellerId)+1),amount:a.amount});
   }
   for(const [from,people] of selected){
-   const to=expense.payerHouseholdId,payeeId=expense.payerTravellerId||null,bucket=expenseBucket(expense),key=JSON.stringify([bucket,from,to,payeeId]);
+   const to=expense.payerHouseholdId,payeeId=expense.payerTravellerId||null,bucket=expenseBucket(t,expense),key=JSON.stringify([bucket,from,to,payeeId]);
    if(!charges.has(key))charges.set(key,{bucket,from,to,payeeId,payeeName:payeeId?(members[payeeId]?.name||'Traveller '+(t.travellers.findIndex(p=>p.id===payeeId)+1)):null,amount:0,expenses:[]});
    const charge=charges.get(key),amount=people.reduce((n,p)=>n+p.amount,0);
    charge.amount+=amount;
