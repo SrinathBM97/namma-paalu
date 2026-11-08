@@ -36,4 +36,12 @@ assert.ok(js.includes("id=\"npPreviewLink\""),'Recipient preview action missing'
 assert.ok(js.includes("shareFromPeople"),'People page share action missing');
 assert.ok(js.includes("Name your families before sharing"),'Placeholder-name guard missing');
 
+
+assert.ok(js.includes("chartPanel.addEventListener('click'"),'Wheel segment clicks must use delegated listener after SVG replacement');
+assert.ok(js.includes("chartPanel.addEventListener('keydown'"),'Wheel segments must remain keyboard accessible');
+assert.ok(js.includes("data-view-calculation=\"breakdown\""),'Settlement needs explicit calculation navigation');
+assert.ok(js.includes("function openCalculationPage()"),'Calculation route action missing');
+assert.ok(js.includes("go('breakdown')"),'Calculation action must enter Split');
+assert.ok(js.includes("main.style.animation='none'"),'Route must not remain hidden behind animation');
+
 console.log('Syntax, family renaming, sharing, and baseline wiring checks passed.');
