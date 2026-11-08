@@ -66,6 +66,37 @@ const scenario=runtime+String.raw`
  const after=document.body.dataset.view;
  const content=document.getElementById('content').innerHTML;
  globalThis.smoke={before,button,after,url:location.hash,hasBreakdown:content.includes('Expense-level explanation'),total:calc().total,peopleHasRename:renderTravellers(trip(),calc()).includes('data-rename-family'),splitHasRename:content.includes('data-rename-family')};
+const carHouseholds=['a','b','c','d','e'].map(id=>({id,name:'Family '+id}));
+const carTravellers=[['a',3],['b',3],['c',4],['d',3],['e',1]].flatMap(([hid,n])=>Array.from({length:n},(_,i)=>({id:hid+(i+1),householdId:hid,name:hid+(i+1)})));
+const carExp=(id,payer,amount,participants)=>({id,name:id,amount,payerHouseholdId:payer,participants});
+const carTrip={households:carHouseholds,travellers:carTravellers,confirmedPayments:[],expenses:[
+ carExp('car1petrol','a',350000,['a1','a2','a3','d1','e1']),
+ carExp('car1toll','a',70000,['a1','a2','a3','d1','e1']),
+ carExp('car2petrol','b',300000,['b1','b2','b3','c1','c2']),
+ carExp('car2toll','b',50000,['b1','b2','b3','c1','c2'])
+]};
+const carCalc=calculateTrip(carTrip),carDirect=directExpenseCharges(carTrip,carCalc);
+const familyCToB=carDirect.find(x=>x.from==='c'&&x.to==='b');
+const carMarkup=renderSettlements(carTrip,carCalc);
+const laterTrip=JSON.parse(JSON.stringify(carTrip));laterTrip.expenses.find(e=>e.id==='car2petrol').participants=['b1','b2','b3','c1'];
+const laterCalc=calculateTrip(laterTrip);
+const laterDirect=directExpenseCharges(laterTrip,laterCalc);
+globalThis.carQC={
+ total:carCalc.total,
+ cToB:familyCToB?.amount,
+ petrol:familyCToB?.expenses.find(e=>e.id==='car2petrol')?.amount,
+ toll:familyCToB?.expenses.find(e=>e.id==='car2toll')?.amount,
+ passengers:familyCToB?.expenses.find(e=>e.id==='car2petrol')?.passengers,
+ perPerson:familyCToB?.expenses.find(e=>e.id==='car2petrol')?.people.map(p=>p.amount),
+ unrelatedDirect:carDirect.some(x=>x.from==='c'&&x.to==='a'||x.from==='d'&&x.to==='b'),
+ netCouldRedirect:carCalc.transfers.some(x=>x.from==='c'&&x.to==='a'),
+ renderedMath:carMarkup.includes('2 × ₹600.00 per person = ₹1,200.00'),
+ defaultMode:carMarkup.includes('By expense · Direct charges'),
+ changedDirect:laterDirect.find(x=>x.from==='c'&&x.to==='b')?.amount,
+ changedCar2Petrol:laterDirect.find(x=>x.from==='c'&&x.to==='b')?.expenses.find(e=>e.id==='car2petrol')?.amount,
+ car1Unchanged:laterDirect.find(x=>x.from==='d'&&x.to==='a')?.amount,
+ splitTotalMatches:carCalc.total===770000
+};
 `;
 const context={document:fakeDocument,localStorage:{getItem(){return null},setItem(){}},location:fakeLocation,window:{scrollTo(){},matchMedia(){return {matches:false}}},history:fakeHistory,console};
 vm.runInNewContext(scenario,context,{timeout:2000});
@@ -77,5 +108,18 @@ assert.equal(context.smoke.hasBreakdown,true);
 assert.equal(context.smoke.total,2363000);
 assert.equal(context.smoke.peopleHasRename,true);
 assert.equal(context.smoke.splitHasRename,false);
+assert.equal(context.carQC.total,770000,'Two-car trip total');
+assert.equal(context.carQC.cToB,140000,'Two passengers from Family C owe Family B 1400');
+assert.equal(context.carQC.petrol,120000,'Car 2 petrol two-person cost');
+assert.equal(context.carQC.toll,20000,'Car 2 toll two-person cost');
+assert.equal(context.carQC.passengers,2);
+assert.deepEqual(Array.from(context.carQC.perPerson),[60000,60000]);
+assert.equal(context.carQC.unrelatedDirect,false,'Other car passengers must not be charged');
+assert.equal(context.carQC.netCouldRedirect,true,'Net settlement can redirect due to global offset');
+assert.equal(context.carQC.renderedMath,true,'Two-person math must appear in Settle UI');
+assert.equal(context.carQC.defaultMode,true,'Direct expense charges default');
+assert.equal(context.carQC.changedDirect,95000,'Changing petrol participants recalculates only the selected shares');
+assert.equal(context.carQC.changedCar2Petrol,75000,'4-way car petrol after one person deselected');
+assert.equal(context.carQC.car1Unchanged,84000,'Unrelated car charge unchanged');
 
 console.log('Syntax, family renaming, sharing, and baseline wiring checks passed.');
